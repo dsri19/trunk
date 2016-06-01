@@ -1,0 +1,170 @@
+# 
+# Find script for module @ARTIFACT_NAME@
+#
+# Libraries:
+#  Debug:   @ARTIFACT_LIBS_DEBUG@
+#  Release: @ARTIFACT_LIBS_RELEASE@
+# Binaries:
+#  Debug:   @ARTIFACT_BINARIES_DEBUG@
+#  Release: @ARTIFACT_BINARIES_RELEASE@
+# Dependencies:
+#  @ARTIFACT_DEPENDENCIES@
+#  @ARTIFACT_RUNTIME_DEPENDENCIES@
+# Type:
+#  @ARTIFACT_TYPE@
+# Defines:
+#  @ARTIFACT_DEFINES@
+#
+# Output variables:
+#  @ARTIFACT_NAME@_INCLUDE_DIR - Include directory
+#  @ARTIFACT_NAME@_LIBRARY     - Library files
+#  @ARTIFACT_NAME@_BINARY      - Dll files
+#
+
+function(find_pdb DLL_NAME OUT_PDB_NAME)
+	get_filename_component(DLL_NAME_WE ${DLL_NAME} NAME_WE)
+	get_filename_component(DLL_NAME_PATH ${DLL_NAME} PATH)
+	if(NOT EXISTS "${DLL_NAME_PATH}/${DLL_NAME_WE}.pdb")
+		message(FATAL_ERROR "Could not find binary artifact for @ARTIFACT_NAME@: ${DLL_NAME_WE}.pdb")
+	endif()
+	set(${OUT_PDB_NAME} "${DLL_NAME_PATH}/${DLL_NAME_WE}.pdb" PARENT_SCOPE)
+endfunction()
+
+if(NOT @ARTIFACT_NAME@_INCLUDE_DIR)
+	unset(TMP CACHE)
+
+	set(@ARTIFACT_NAME@_INCLUDE_DIR "${@ARTIFACT_NAME@_ROOT}/include"
+		CACHE STRING "@ARTIFACT_NAME@ include directory")
+	mark_as_advanced(@ARTIFACT_NAME@_INCLUDE_DIR)
+endif()
+
+if(NOT "@ARTIFACT_TYPE@" STREQUAL "HEADER_ONLY_LIBRARY")
+	if (NOT @ARTIFACT_NAME@_LIBRARY)
+		set(@ARTIFACT_NAME@_LIBRARY_BASE "${@ARTIFACT_NAME@_ROOT}/lib")
+
+		unset(TMP CACHE)
+		foreach(I @ARTIFACT_LIBS_DEBUG@)
+			find_library(TMP ${I}@LIB_IMPORT_SUFFIX@ PATHS "${@ARTIFACT_NAME@_LIBRARY_BASE}/Debug" NO_DEFAULT_PATH)
+			if(NOT TMP)
+				unset(TMP CACHE)
+				message(FATAL_ERROR "Could not find library artifact for @ARTIFACT_NAME@: " ${I})
+			endif()
+			set(@ARTIFACT_NAME@_LIBRARY_DEBUG ${@ARTIFACT_NAME@_LIBRARY_DEBUG} debug ${TMP})
+			unset(TMP CACHE)
+		endforeach()
+		foreach(I @ARTIFACT_LIBS_RELEASE@)
+			if(RTT_USE_RELWITHDEBINFO_LIBRARIES AND (EXISTS "${@ARTIFACT_NAME@_LIBRARY_BASE}/RelWithDebInfo"))
+				find_library(TMP ${I}@LIB_IMPORT_SUFFIX@ PATHS "${@ARTIFACT_NAME@_LIBRARY_BASE}/RelWithDebInfo" NO_DEFAULT_PATH)
+			else()
+				find_library(TMP ${I}@LIB_IMPORT_SUFFIX@ PATHS "${@ARTIFACT_NAME@_LIBRARY_BASE}/Release" NO_DEFAULT_PATH)
+			endif()
+			if(NOT TMP)
+				unset(TMP CACHE)
+				message(FATAL_ERROR "Could not find library artifact for @ARTIFACT_NAME@: " ${I})
+			endif()
+			set(@ARTIFACT_NAME@_LIBRARY_RELEASE ${@ARTIFACT_NAME@_LIBRARY_RELEASE} optimized ${TMP})
+			unset(TMP CACHE)
+		endforeach()
+
+		if ( SQUISHCOCO_ENABLED )
+			foreach(I @ARTIFACT_LIBS_RELEASE@)
+				find_library(TMP ${I}@LIB_IMPORT_SUFFIX@ PATHS "${@ARTIFACT_NAME@_LIBRARY_BASE}/Coverage" NO_DEFAULT_PATH)
+				if(NOT TMP)
+					unset(TMP CACHE)
+				endif()
+				set(@ARTIFACT_NAME@_LIBRARY_COVERAGE ${@ARTIFACT_NAME@_LIBRARY_COVERAGE} coverage ${TMP})
+				unset(TMP CACHE)
+			endforeach()
+		endif()
+
+		set(@ARTIFACT_NAME@_LIBRARY ${@ARTIFACT_NAME@_LIBRARY_DEBUG} ${@ARTIFACT_NAME@_LIBRARY_RELEASE} ${@ARTIFACT_NAME@_LIBRARY_COVERAGE}
+			CACHE STRING "@ARTIFACT_NAME@ library files")
+		mark_as_advanced(@ARTIFACT_NAME@_LIBRARY)
+	endif()
+	
+	if("@ARTIFACT_TYPE@" STREQUAL "STATIC_LIBRARY")
+		string(TOUPPER @ARTIFACT_NAME@ upper_name)
+		set(STATIC_BUILD_PREPROCESSOR_FLAG RTT_${upper_name}_STATIC_BUILD)
+	endif()
+
+	if(NOT @ARTIFACT_NAME@_BINARIES)
+		if(NOT "@ARTIFACT_TYPE@" STREQUAL "STATIC_LIBRARY")
+			if(MSVC)
+				set(@ARTIFACT_NAME@_BINARY_BASE "${@ARTIFACT_NAME@_ROOT}/bin")
+			else(MSVC)
+				set(@ARTIFACT_NAME@_BINARY_BASE "${@ARTIFACT_NAME@_ROOT}/lib")
+			endif(MSVC)
+			
+			unset(TMP CACHE)
+			foreach(I @ARTIFACT_BINARIES_DEBUG@)
+				find_file(TMP ${I} PATHS "${@ARTIFACT_NAME@_BINARY_BASE}/Debug" NO_DEFAULT_PATH)
+				if(NOT TMP)
+					unset(TMP CACHE)
+					message(FATAL_ERROR "Could not find binary artifact for @ARTIFACT_NAME@: " ${I})
+				endif()
+				set(@ARTIFACT_NAME@_BINARY_DEBUG ${@ARTIFACT_NAME@_BINARY_DEBUG} debug ${TMP})
+                if(MSVC)
+    				find_pdb(${TMP} TMP_PDB)
+	    			set(@ARTIFACT_NAME@_BINARY_DEBUG ${@ARTIFACT_NAME@_BINARY_DEBUG} debug ${TMP_PDB})
+                endif()
+				unset(TMP CACHE)
+			endforeach()
+			foreach(I @ARTIFACT_BINARIES_RELEASE@)
+				if(RTT_USE_RELWITHDEBINFO_LIBRARIES AND (EXISTS "${@ARTIFACT_NAME@_BINARY_BASE}/RelWithDebInfo"))
+					find_file(TMP ${I} PATHS "${@ARTIFACT_NAME@_BINARY_BASE}/RelWithDebInfo" NO_DEFAULT_PATH)
+				else()
+					find_file(TMP ${I} PATHS "${@ARTIFACT_NAME@_BINARY_BASE}/Release" NO_DEFAULT_PATH)
+				endif()
+				if(NOT TMP)
+					unset(TMP CACHE)
+					message(FATAL_ERROR "Could not find binary artifact for @ARTIFACT_NAME@: " ${I})
+				endif()
+				set(@ARTIFACT_NAME@_BINARY_RELEASE ${@ARTIFACT_NAME@_BINARY_RELEASE} optimized ${TMP})
+				if(RTT_USE_RELWITHDEBINFO_LIBRARIES AND (EXISTS "${@ARTIFACT_NAME@_BINARY_BASE}/RelWithDebInfo"))
+                    if(MSVC)
+    					find_pdb(${TMP} TMP_PDB)
+	    				set(@ARTIFACT_NAME@_BINARY_RELEASE ${@ARTIFACT_NAME@_BINARY_RELEASE} optimized "${TMP_PDB}")
+                    endif()
+				endif()
+				unset(TMP CACHE)
+			endforeach()
+
+			if ( SQUISHCOCO_ENABLED )
+				foreach(I @ARTIFACT_BINARIES_RELEASE@)
+					find_file(TMP ${I} PATHS "${@ARTIFACT_NAME@_BINARY_BASE}/Coverage" NO_DEFAULT_PATH)
+					if(NOT TMP)
+						unset(TMP CACHE)
+					endif()
+					set(@ARTIFACT_NAME@_BINARY_COVERAGE ${@ARTIFACT_NAME@_BINARY_COVERAGE} coverage ${TMP})
+					unset(TMP CACHE)
+				endforeach()
+			endif()
+
+			set(@ARTIFACT_NAME@_BINARIES ${@ARTIFACT_NAME@_BINARY_DEBUG} ${@ARTIFACT_NAME@_BINARY_RELEASE} ${@ARTIFACT_NAME@_BINARY_COVERAGE}
+				CACHE STRING "@ARTIFACT_NAME@ binary files")
+			mark_as_advanced(@ARTIFACT_NAME@_BINARIES)
+		endif()
+	endif()
+endif()
+	
+__rtt_system_library(@ARTIFACT_NAME@
+	IMPLIB
+		${@ARTIFACT_NAME@_LIBRARY}
+
+	INCLUDES
+		${@ARTIFACT_NAME@_INCLUDE_DIR}
+		
+	LOCATION
+		${@ARTIFACT_NAME@_BINARIES}
+		
+	DEPENDS
+		@ARTIFACT_DEPENDENCIES@
+		
+	DEFINES
+		${STATIC_BUILD_PREPROCESSOR_FLAG}
+		@ARTIFACT_DEFINES@
+		
+	RUNTIME_DEPENDENCIES
+		@ARTIFACT_RUNTIME_DEPENDENCIES@
+)
+

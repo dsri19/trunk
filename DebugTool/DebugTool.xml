@@ -1,0 +1,10 @@
+<Deployment>
+	<Resource uri="DebugTool.dll"/>
+  <Instance id="B5F3B926-6B57-4f29-A9EE-633B3E701BCF" version="1.0" visible="true">
+	  <Name>Debug Tool</Name>
+	  <Description>RTT Debug Tool</Description>
+	  <Vendor>(c) RTT AG, 2012</Vendor>
+	</Instance>
+</Deployment>
+
+

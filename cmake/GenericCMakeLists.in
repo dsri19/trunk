@@ -1,0 +1,17 @@
+# 
+# Generic CMakeLists.txt
+#
+# Name:
+#  @ARTIFACT_NAME@
+# Dependencies:
+#  @SOLVED_DEPENDENCIES@
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+foreach(target @SOLVED_DEPENDENCIES@)
+	set(${target}_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+	include("rtt_${target}")
+endforeach()
+
+# Use this global variable if you want to access additional files from the artifact
+set(ARTIFACT_@ARTIFACT_NAME@_ROOT ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Root of @ARTIFACT_NAME@ binary artifact")
