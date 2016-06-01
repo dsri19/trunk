@@ -1,5 +1,7 @@
 # This is the cmake cross platform make file for the
 # RTT software.
+# Testing
+
 # To use it, please create a build directory in the dir
 # this file your are now reading lives:
 #
