@@ -5,6 +5,7 @@ import re
 import sys
 import urllib2
 
+#testing
 password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
 handler = urllib2.HTTPBasicAuthHandler(password_mgr)
 opener = urllib2.build_opener(handler)
