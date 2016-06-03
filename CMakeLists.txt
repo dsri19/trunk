@@ -1,5 +1,7 @@
 # This is the cmake cross platform make file for the
 # RTT software.
+# Testing
+# making some changes for testing
 # To use it, please create a build directory in the dir
 # this file your are now reading lives:
 #
@@ -8,6 +10,9 @@
 #  $ cmake ../
 #  $ make
 # We want to have 2.8 available
+
+making some more changes for testing
+
 CMAKE_MINIMUM_REQUIRED (VERSION 2.8)
 CMAKE_POLICY (VERSION 2.8)
 
