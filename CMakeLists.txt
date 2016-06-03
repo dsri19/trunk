@@ -4,6 +4,10 @@
 # making some changes for testing
 # To use it, please create a build directory in the dir
 # this file your are now reading lives:
+
+#changing the file in trunk and merging in the fork and down stream branches
+
+
 #
 #  $ mkdir build
 #  $ cd build
